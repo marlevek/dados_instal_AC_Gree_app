@@ -1,9 +1,7 @@
 import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
-import locale
 
-locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
 st.set_page_config('Dados Instalação ar-condicionado Gree', page_icon=':mechanic:')
 st.title(':blue[Dados Instalação Ar-Cond GREE]')
