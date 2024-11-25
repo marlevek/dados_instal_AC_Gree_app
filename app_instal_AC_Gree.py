@@ -1,14 +1,18 @@
 import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
-
+from streamlit_drawable_canvas import st_canvas
+import io
+from PIL import Image
+import numpy as np
+import tempfile 
 
 st.set_page_config('Dados Instalação ar-condicionado Gree', page_icon=':mechanic:')
 st.title(':blue[Dados Instalação Ar-Cond GREE]')
 st.markdown('<br>', unsafe_allow_html=True)
 
 # Função para gerar PDF
-def gera_pdf(dados, assinatura_path):
+def gera_pdf(dados, assinatura_img):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('Arial', size=14)
@@ -34,13 +38,22 @@ def gera_pdf(dados, assinatura_path):
             pdf.multi_cell(0, 10, f'{key}: {value}')
     pdf.ln(10)
 
-    # Assinatura
+    # Adiciona o título "Assinatura Técnico Responsável"
     pdf.set_font('Arial', style='B', size=12)
     pdf.cell(200, 10, txt="Assinatura Técnico Responsável:", ln=True)
-    pdf.ln(5)
-    imagem_largura = 25
-    imagem_altura = 20
-    pdf.image(assinatura_path, x=10, y=pdf.get_y(), w=imagem_largura, h=imagem_altura)  # Insere a imagem da assinatura
+    pdf.set_font('Arial', size=12)
+    
+    # Se houver uma assinatura, adicionar ao PDF
+    if assinatura_img is not None and assinatura_img.size > 0:
+        # Converte a imagem de NumPy array para formato que o FPDF aceita
+        img = Image.fromarray(assinatura_img)  # Convertendo NumPy array para imagem PIL
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
+            # Salva a imagem em um arquivo temporário
+            img.save(temp_file, format='PNG')
+            temp_file_path = temp_file.name
+
+        # Adiciona a imagem ao PDF
+        pdf.image(temp_file_path, x=10, y=pdf.get_y(), w=100)  # Adiciona a imagem no PDF
 
     return pdf.output(dest='S').encode('latin1')
 
@@ -92,14 +105,20 @@ data_instalacao = st.text_input('**Data da Instalação (DD/MM/YYYY):**')
 
 st.markdown('<br>', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2, vertical_alignment='center')
-with col1:
-    st.write('**Assinatura Técnico Responsável:**')
-with col2:
-    assinatura_path = 'AssinMar.gif'  # Caminho para a imagem da assinatura
-    st.image(image=assinatura_path, width=75)
+# Assinatura
+st.subheader('Assinatura Técnico Responsável')
+canvas_result = st_canvas(
+        width=300,
+        height=100,
+        stroke_width=2,
+        stroke_color='black',
+        background_color='white',
+        display_toolbar=True,
+        key='assinatura'
+    )
 
-# Botão baixar PDF
+
+# Botão Salvar PDF
 if st.button('Baixar PDF'):
     # Preenche o dicionário com os dados coletados
     dados = {
@@ -127,11 +146,15 @@ if st.button('Baixar PDF'):
         },
     }
 
-    pdf_bytes = gera_pdf(dados, assinatura_path)
-    st.download_button(
-        label='Download PDF',
-        data=pdf_bytes,
-        file_name='dados_instal_AC_Gree.pdf',
-        mime='application/pdf'
-    )
-
+    # Verifica se a assinatura foi desenhada
+    if canvas_result.image_data is not None and canvas_result.image_data.size > 0:
+        assinatura_img = canvas_result.image_data
+        pdf_bytes = gera_pdf(dados, assinatura_img)
+        st.download_button(
+            label='Download PDF',
+            data=pdf_bytes,
+            file_name='dados_instal_AC_Gree.pdf',
+            mime='application/pdf'
+        )
+    else:
+        st.warning("Por favor, desenhe a assinatura antes de gerar o PDF.")
