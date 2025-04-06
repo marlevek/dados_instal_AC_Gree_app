@@ -28,6 +28,14 @@ def gera_pdf(dados, assinatura_img):
     for key, value in dados['instalador'].items():
         pdf.multi_cell(0, 10, f'{key}: {value}')
     pdf.ln(5)
+    
+    # Dados do Cliente
+    pdf.set_font('Arial', style='B', size=12)
+    pdf.cell(200, 10, txt='Dados do Cliente', ln=True)
+    pdf.set_font('Arial', size=12)
+    for key, value in dados['cliente'].items():
+        pdf.multi_cell(0, 10, f'{key}: {value}')
+    pdf.ln(5)
 
     # Demais Dados
     pdf.set_font('Arial', style='B', size=12)
@@ -70,6 +78,15 @@ for key, value in dados_instalador.items():
     st.write(f"**{key}:** {value}")
 
 st.markdown('<br>', unsafe_allow_html=True)
+
+
+st.subheader('Dados Cliente')
+dados_cliente = {
+    'Cliente': st.text_input(label='Nome'),
+    'CPF/CNPJ': st.text_input(label='CPF/CNPJ'),
+    'endereco': st.text_input(label='Endereço'),
+    'Telefone_cliente': st.text_input(label='Telefone'),
+}
 
 # Sobre o aparelho
 st.subheader('Dados Aparelho')
@@ -123,6 +140,7 @@ if st.button('Baixar PDF'):
     # Preenche o dicionário com os dados coletados
     dados = {
         "instalador": dados_instalador,
+        "cliente": dados_cliente,
         "detalhes": {
             "Tipo do Aparelho": tipo_aparelho,
             "Modelo": modelo,
